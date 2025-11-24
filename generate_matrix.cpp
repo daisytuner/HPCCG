@@ -58,6 +58,7 @@ using std::endl;
 #include <cassert>
 #include <algorithm>
 #include <vector>
+#include <cstdint>
 #include "generate_matrix.hpp"
 void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, float **b, float **xexact)
 
@@ -155,10 +156,10 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, f
   float* ellpack_vals = new float[ellpack_size];
   int* ellpack_inds = new int[ellpack_size];
 
-  // Initialize arrays with zeros
+  // Initialize arrays with zeros and invalid indices  
   for (int i = 0; i < ellpack_size; i++) {
     ellpack_vals[i] = 0.0f;
-    ellpack_inds[i] = 0;  // Invalid index
+    ellpack_inds[i] = UINT32_MAX;  // Use UINT32_MAX as invalid index
   }
 
   // Convert CSR to ELLPACK format
@@ -176,7 +177,8 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, f
   
   (*A)->ellpack_vals = ellpack_vals;
   (*A)->ellpack_inds = ellpack_inds;
-  (*A)->ellpack_cols = 32;
+  (*A)->ellpack_cols = ellpack_cols;
+  (*A)->ellpack_nnz = ellpack_size;
 
   return;
 }
