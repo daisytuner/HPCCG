@@ -57,6 +57,10 @@ void destroyMatrix(HPC_Sparse_Matrix * &A)
   {
     delete [] A->nnz_in_row;
   }
+  if (A->nnz_in_row_acc)
+  {
+    delete [] A->nnz_in_row_acc;
+  }
   if(A->list_of_vals)
   {
     delete [] A->list_of_vals;

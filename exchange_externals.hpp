@@ -46,5 +46,5 @@
 #include <mpi.h>
 #endif
 #include "HPC_Sparse_Matrix.hpp"
-void exchange_externals(HPC_Sparse_Matrix *A, const double *x);
+void exchange_externals(HPC_Sparse_Matrix *A, const float *x);
 #endif

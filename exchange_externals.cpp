@@ -48,7 +48,7 @@ using std::endl;
 #include <cstdio>
 #include "exchange_externals.hpp"
 #undef DEBUG
-void exchange_externals(HPC_Sparse_Matrix * A, const double *x)
+void exchange_externals(HPC_Sparse_Matrix * A, const float *x)
 {
   int i, j, k;
   int num_external = 0;
@@ -60,7 +60,7 @@ void exchange_externals(HPC_Sparse_Matrix * A, const double *x)
   int * recv_length = A->recv_length;
   int * send_length = A->send_length;
   int * neighbors = A->neighbors;
-  double * send_buffer = A->send_buffer;
+  float * send_buffer = A->send_buffer;
   int total_to_be_sent = A->total_to_be_sent;
   int * elements_to_send = A->elements_to_send;
   
@@ -81,13 +81,13 @@ void exchange_externals(HPC_Sparse_Matrix * A, const double *x)
   //
   // Externals are at end of locals
   //
-  double *x_external = (double *) x + local_nrow;
+  float *x_external = (float *) x + local_nrow;
 
   // Post receives first 
   for (i = 0; i < num_neighbors; i++) 
     {
       int n_recv = recv_length[i];
-      MPI_Irecv(x_external, n_recv, MPI_DOUBLE, neighbors[i], MPI_MY_TAG, 
+      MPI_Irecv(x_external, n_recv, MPI_FLOAT, neighbors[i], MPI_MY_TAG, 
 		MPI_COMM_WORLD, request+i);
       x_external += n_recv;
     }
@@ -106,7 +106,7 @@ void exchange_externals(HPC_Sparse_Matrix * A, const double *x)
   for (i = 0; i < num_neighbors; i++) 
     {
       int n_send = send_length[i];
-      MPI_Send(send_buffer, n_send, MPI_DOUBLE, neighbors[i], MPI_MY_TAG, 
+      MPI_Send(send_buffer, n_send, MPI_FLOAT, neighbors[i], MPI_MY_TAG, 
 	       MPI_COMM_WORLD);
       send_buffer += n_send;
     }

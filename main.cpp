@@ -51,8 +51,6 @@
 
 // Routines called:
 
-// read_HPC_row - Reads in linear system
-
 // mytimer - Timing routine (compile with -DWALL to get wall clock
 //           times
 
@@ -79,13 +77,11 @@ using std::endl;
 #include <omp.h>
 #endif
 #include "generate_matrix.hpp"
-#include "read_HPC_row.hpp"
 #include "mytimer.hpp"
 #include "HPC_sparsemv.hpp"
 #include "compute_residual.hpp"
 #include "HPCCG.hpp"
 #include "HPC_Sparse_Matrix.hpp"
-#include "dump_matlab_matrix.hpp"
 
 #include "YAML_Element.hpp"
 #include "YAML_Doc.hpp"
@@ -96,8 +92,8 @@ int main(int argc, char *argv[])
 {
 
   HPC_Sparse_Matrix *A;
-  double *x, *b, *xexact;
-  double norm, d;
+  float *x, *b, *xexact;
+  float norm, d;
   int ierr = 0;
   int i, j;
   int ione = 1;
@@ -134,7 +130,7 @@ int main(int argc, char *argv[])
 #endif
 
 
-  if(argc != 2 && argc!=4) {
+  if(argc!=4) {
     if (rank==0)
       cerr << "Usage:" << endl
 	   << "Mode 1: " << argv[0] << " nx ny nz" << endl
@@ -144,21 +140,11 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  if (argc==4) 
-  {
-    nx = atoi(argv[1]);
-    ny = atoi(argv[2]);
-    nz = atoi(argv[3]);
-    generate_matrix(nx, ny, nz, &A, &x, &b, &xexact);
-  }
-  else
-  {
-    read_HPC_row(argv[1], &A, &x, &b, &xexact);
-  }
+  nx = atoi(argv[1]);
+  ny = atoi(argv[2]);
+  nz = atoi(argv[3]);
+  generate_matrix(nx, ny, nz, &A, &x, &b, &xexact);
 
-
-  bool dump_matrix = false;
-  if (dump_matrix && size<=4) dump_matlab_matrix(A, rank);
 
 #ifdef USING_MPI
 
@@ -172,12 +158,10 @@ int main(int argc, char *argv[])
 
   double t1 = mytimer();   // Initialize it (if needed)
   int niters = 0;
-  double normr = 0.0;
+  float normr = 0.0f;
   int max_iter = 150;
-  double tolerance = 0.0; // Set tolerance to zero to make all runs do max_iter iterations
-  ierr = HPCCG( A, b, x, max_iter, tolerance, niters, normr, times);
-
-	if (ierr) cerr << "Error in call to CG: " << ierr << ".\n" << endl;
+  float tolerance = 0.0f; // Set tolerance to zero to make all runs do max_iter iterations
+  HPCCG( A, b, x, max_iter, tolerance, niters, normr, times);
 
 #ifdef USING_MPI
       double t4 = times[4];
@@ -212,14 +196,7 @@ int main(int argc, char *argv[])
           doc.get("Parallelism")->add("MPI not enabled","");
 #endif
 
-#ifdef USING_OMP
-          int nthreads = 1;
-#pragma omp parallel
-          nthreads = omp_get_num_threads();
-          doc.get("Parallelism")->add("Number of OpenMP threads",nthreads);
-#else
           doc.get("Parallelism")->add("OpenMP not enabled","");
-#endif
 
       doc.add("Dimensions","");
 	  doc.get("Dimensions")->add("nx",nx);
@@ -276,7 +253,7 @@ int main(int argc, char *argv[])
   // Compute difference between known exact solution and computed solution
   // All processors are needed here.
 
-  double residual = 0;
+  float residual = 0.0f;
   //  if ((ierr = compute_residual(A->local_nrow, x, xexact, &residual)))
   //  cerr << "Error in call to compute_residual: " << ierr << ".\n" << endl;
 

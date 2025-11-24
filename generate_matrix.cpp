@@ -57,7 +57,7 @@ using std::endl;
 #include <cstdio>
 #include <cassert>
 #include "generate_matrix.hpp"
-void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, double **b, double **xexact)
+void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, float **b, float **xexact)
 
 {
 #ifdef DEBUG
@@ -95,20 +95,22 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
 
   // Allocate arrays that are of length local_nrow
   (*A)->nnz_in_row = new int[local_nrow];
-  (*A)->ptr_to_vals_in_row = new double*[local_nrow];
+  (*A)->nnz_in_row_acc = new int[local_nrow+1];
+  (*A)->nnz_in_row_acc[0] = 0;
+  (*A)->ptr_to_vals_in_row = new float*[local_nrow];
   (*A)->ptr_to_inds_in_row = new int   *[local_nrow];
-  (*A)->ptr_to_diags       = new double*[local_nrow];
+  (*A)->ptr_to_diags       = new float*[local_nrow];
 
-  *x = new double[local_nrow];
-  *b = new double[local_nrow];
-  *xexact = new double[local_nrow];
+  *x = new float[local_nrow];
+  *b = new float[local_nrow];
+  *xexact = new float[local_nrow];
 
 
   // Allocate arrays that are of length local_nnz
-  (*A)->list_of_vals = new double[local_nnz];
+  (*A)->list_of_vals = new float[local_nnz];
   (*A)->list_of_inds = new int   [local_nnz];
 
-  double * curvalptr = (*A)->list_of_vals;
+  float * curvalptr = (*A)->list_of_vals;
   int * curindptr = (*A)->list_of_inds;
 
   long long nnzglobal = 0;
@@ -144,9 +146,10 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
           } // end sy loop
         } // end sz loop
 	(*A)->nnz_in_row[curlocalrow] = nnzrow;
+  (*A)->nnz_in_row_acc[curlocalrow+1] = (*A)->nnz_in_row_acc[curlocalrow]+nnzrow;
 	nnzglobal += nnzrow;
 	(*x)[curlocalrow] = 0.0;
-	(*b)[curlocalrow] = 27.0 - ((double) (nnzrow-1));
+	(*b)[curlocalrow] = 27.0 - ((float) (nnzrow-1));
 	(*xexact)[curlocalrow] = 1.0;
       } // end ix loop
      } // end iy loop

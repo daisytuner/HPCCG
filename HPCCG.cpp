@@ -69,9 +69,9 @@ using std::endl;
 
 #define TICK()  t0 = mytimer() // Use TICK and TOCK to time a code section
 #define TOCK(t) t += mytimer() - t0
-int HPCCG(HPC_Sparse_Matrix * A,
-	  const double * const b, double * const x,
-	  const int max_iter, const double tolerance, int &niters, double & normr,
+void HPCCG(HPC_Sparse_Matrix * A,
+	  const float * const b, float * const x,
+	  const int max_iter, const float tolerance, int &niters, float & normr,
 	  double * times)
 
 {
@@ -84,13 +84,13 @@ int HPCCG(HPC_Sparse_Matrix * A,
   int nrow = A->local_nrow;
   int ncol = A->local_ncol;
 
-  double * r = new double [nrow];
-  double * p = new double [ncol]; // In parallel case, A is rectangular
-  double * Ap = new double [nrow];
+  float * r = new float [nrow];
+  float * p = new float [ncol]; // In parallel case, A is rectangular
+  float * Ap = new float [nrow];
 
-  normr = 0.0;
-  double rtrans = 0.0;
-  double oldrtrans = 0.0;
+  normr = 0.0f;
+  float rtrans = 0.0f;
+  float oldrtrans = 0.0f;
 
 #ifdef USING_MPI
   int rank; // Number of MPI processes, My process ID
@@ -104,14 +104,14 @@ int HPCCG(HPC_Sparse_Matrix * A,
   if (print_freq<1)  print_freq=1;
 
   // p is of length ncols, copy x to p for sparse MV operation
-  TICK(); waxpby(nrow, 1.0, x, 0.0, x, p); TOCK(t2);
+  TICK(); waxpby(nrow, 1.0f, x, 0.0f, x, p); TOCK(t2);
 #ifdef USING_MPI
   TICK(); exchange_externals(A,p); TOCK(t5); 
 #endif
   TICK(); HPC_sparsemv(A, p, Ap); TOCK(t3);
-  TICK(); waxpby(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
+  TICK(); waxpby(nrow, 1.0f, b, -1.0f, Ap, r); TOCK(t2);
   TICK(); ddot(nrow, r, r, &rtrans, t4); TOCK(t1);
-  normr = sqrt(rtrans);
+  normr = sqrtf(rtrans);
 
   if (rank==0) cout << "Initial Residual = "<< normr << endl;
 
@@ -119,16 +119,16 @@ int HPCCG(HPC_Sparse_Matrix * A,
     {
       if (k == 1)
 	{
-	  TICK(); waxpby(nrow, 1.0, r, 0.0, r, p); TOCK(t2);
+	  TICK(); waxpby(nrow, 1.0f, r, 0.0f, r, p); TOCK(t2);
 	}
       else
 	{
 	  oldrtrans = rtrans;
 	  TICK(); ddot (nrow, r, r, &rtrans, t4); TOCK(t1);// 2*nrow ops
 	  double beta = rtrans/oldrtrans;
-	  TICK(); waxpby (nrow, 1.0, r, beta, p, p);  TOCK(t2);// 2*nrow ops
+	  TICK(); waxpby (nrow, 1.0f, r, beta, p, p);  TOCK(t2);// 2*nrow ops
 	}
-      normr = sqrt(rtrans);
+      normr = sqrtf(rtrans);
       if (rank==0 && (k%print_freq == 0 || k+1 == max_iter))
       cout << "Iteration = "<< k << "   Residual = "<< normr << endl;
      
@@ -137,11 +137,11 @@ int HPCCG(HPC_Sparse_Matrix * A,
       TICK(); exchange_externals(A,p); TOCK(t5); 
 #endif
       TICK(); HPC_sparsemv(A, p, Ap); TOCK(t3); // 2*nnz ops
-      double alpha = 0.0;
+      float alpha = 0.0f;
       TICK(); ddot(nrow, p, Ap, &alpha, t4); TOCK(t1); // 2*nrow ops
       alpha = rtrans/alpha;
-      TICK(); waxpby(nrow, 1.0, x, alpha, p, x);// 2*nrow ops
-      waxpby(nrow, 1.0, r, -alpha, Ap, r);  TOCK(t2);// 2*nrow ops
+      TICK(); waxpby(nrow, 1.0f, x, alpha, p, x);// 2*nrow ops
+      waxpby(nrow, 1.0f, r, -alpha, Ap, r);  TOCK(t2);// 2*nrow ops
       niters = k;
     }
 
@@ -157,5 +157,4 @@ int HPCCG(HPC_Sparse_Matrix * A,
   delete [] Ap;
   delete [] r;
   times[0] = mytimer() - t_begin;  // Total time. All done...
-  return(0);
 }

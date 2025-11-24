@@ -48,6 +48,6 @@
                  // then include mpi.h
 #endif
 
-int HPC_sparsemv( HPC_Sparse_Matrix *A, 
-		 const double * const x, double * const y);
+void HPC_sparsemv( HPC_Sparse_Matrix *A, 
+		 const float * const x, float * const y);
 #endif

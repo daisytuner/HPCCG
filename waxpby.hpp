@@ -40,6 +40,6 @@
 // ************************************************************************
 //@HEADER
 
-int waxpby (const int n, const double alpha, const double * const x, 
-	    const double beta, const double * const y, 
-		     double * const w);
+void waxpby (const int n, const float alpha, const float * const x, 
+	    const float beta, const float * const y, 
+		     float * const w);

@@ -63,29 +63,19 @@ using std::endl;
 #include <cmath>
 #include "HPC_sparsemv.hpp"
 
-int HPC_sparsemv( HPC_Sparse_Matrix *A, 
-		 const double * const x, double * const y)
+void HPC_sparsemv( HPC_Sparse_Matrix *A, 
+		 const float * const x, float * const y)
 {
 
   const int nrow = (const int) A->local_nrow;
 
-#ifdef USING_OMP
-#pragma omp parallel for
-#endif
   for (int i=0; i< nrow; i++)
     {
-      double sum = 0.0;
-      const double * const cur_vals = 
-     (const double * const) A->ptr_to_vals_in_row[i];
-
-      const int    * const cur_inds = 
-     (const int    * const) A->ptr_to_inds_in_row[i];
-
-      const int cur_nnz = (const int) A->nnz_in_row[i];
-
-      for (int j=0; j< cur_nnz; j++)
-          sum += cur_vals[j]*x[cur_inds[j]];
+      float sum = 0.0;
+      const int begin = A->nnz_in_row_acc[i];
+      const int end = A->nnz_in_row_acc[i+1];
+      for (int j=begin; j< end; j++)
+          sum += A->list_of_vals[j]*x[A->list_of_inds[j]];
       y[i] = sum;
     }
-  return(0);
 }

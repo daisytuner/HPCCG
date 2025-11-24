@@ -47,6 +47,6 @@
                  // then include mpi.h
 #endif
 
-int compute_residual(const int n, const double * const v1, 
-		     const double * const v2, double * const residual);
+void compute_residual(const int n, const float * const v1, 
+		     const float * const v2, float * const residual);
 #endif

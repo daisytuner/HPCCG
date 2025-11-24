@@ -48,6 +48,6 @@
 
 
 
-int ddot (const int n, const double * const x, const double * const y, 
-	  double * const result, double & time_allreduce);
+void ddot (const int n, const float * const x, const float * const y, 
+	  float * const result, double & time_allreduce);
 #endif

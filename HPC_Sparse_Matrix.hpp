@@ -61,9 +61,10 @@ struct HPC_Sparse_Matrix_STRUCT {
   int local_ncol;  // Must be defined in make_local_matrix
   int local_nnz;
   int  * nnz_in_row;
-  double ** ptr_to_vals_in_row;
+  int  * nnz_in_row_acc;
+  float ** ptr_to_vals_in_row;
   int ** ptr_to_inds_in_row;
-  double ** ptr_to_diags;
+  float ** ptr_to_diags;
 
 #ifdef USING_MPI
   int num_external;
@@ -75,10 +76,10 @@ struct HPC_Sparse_Matrix_STRUCT {
   int *neighbors;
   int *recv_length;
   int *send_length;
-  double *send_buffer;
+  float *send_buffer;
 #endif
 
-  double *list_of_vals;   //needed for cleaning up memory
+  float *list_of_vals;   //needed for cleaning up memory
   int *list_of_inds;      //needed for cleaning up memory
 
 };

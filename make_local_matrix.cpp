@@ -51,7 +51,6 @@ using std::endl;
 #include <cstdio>
 #include <cassert>
 #include "HPC_Sparse_Matrix.hpp"
-#include "read_HPC_row.hpp"
 #include "make_local_matrix.hpp"
 #include "mytimer.hpp"
 //#define DEBUG
@@ -85,7 +84,7 @@ void make_local_matrix(HPC_Sparse_Matrix * A)
   int local_nrow = A->local_nrow;
   int local_nnz = A->local_nnz;
   int  * nnz_in_row = A->nnz_in_row;
-  double ** ptr_to_vals_in_row = A->ptr_to_vals_in_row;
+  float ** ptr_to_vals_in_row = A->ptr_to_vals_in_row;
   int ** ptr_to_inds_in_row = A->ptr_to_inds_in_row;
   
   
@@ -595,7 +594,7 @@ void make_local_matrix(HPC_Sparse_Matrix * A)
   A->local_ncol = A->local_nrow + num_external;
 
   //Used in exchange_externals
-  double *send_buffer = new double[total_to_be_sent];
+  float *send_buffer = new float[total_to_be_sent];
   A->send_buffer = send_buffer;
 
   delete [] tmp_buffer;

@@ -58,28 +58,18 @@
 
 #include "waxpby.hpp"
 
-int waxpby (const int n, const double alpha, const double * const x, 
-	    const double beta, const double * const y, 
-		     double * const w)
+void waxpby (const int n, const float alpha, const float * const x, 
+	    const float beta, const float * const y, 
+		     float * const w)
 {  
-  if (alpha==1.0) {
-#ifdef USING_OMP
-#pragma omp parallel for
-#endif
+  if (alpha==1.0f) {
     for (int i=0; i<n; i++) w[i] = x[i] + beta * y[i];
   }
-  else if(beta==1.0) {
-#ifdef USING_OMP
-#pragma omp parallel for
-#endif
+  else if(beta==1.0f) {
     for (int i=0; i<n; i++) w[i] = alpha * x[i] + y[i];
   }
   else {
-#ifdef USING_OMP
-#pragma omp parallel for
-#endif
     for (int i=0; i<n; i++) w[i] = alpha * x[i] + beta * y[i];
   }
 
-  return(0);
 }
