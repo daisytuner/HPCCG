@@ -1,0 +1,35 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+parameters:
+  container: daisytuner/x64-tenstorrent:0.63.0-latest
+  timeout: 60
+  partitions:
+    - zinnia
+
+steps:
+  build: |
+    export DOCC_CI=regions
+
+    # Baseline
+    docc-cpp -O3 -g -mllvm -docc-tune=none -UUSING_MPI main.cpp generate_matrix.cpp make_local_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp exchange_externals.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.out
+    
+    # Auto-parallelized with OpenMP
+    docc-cpp -O3 -g -mllvm -docc-tune=openmp -UUSING_MPI main.cpp generate_matrix.cpp make_local_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp exchange_externals.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.openmp.out
+
+    # Auto-offloaded to CUDA
+    docc-cpp -O3 -g -mllvm -docc-tune=cuda -UUSING_MPI main.cpp generate_matrix.cpp make_local_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp exchange_externals.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.cuda.out
+
+  run:
+    hpccg:
+      command: ./hpccg.out 100 100 100
+    hpccg_openmp:
+      command: ./hpccg.openmp.out 100 100 100
+      env:
+        OMP_NUM_THREADS: 8
+    hpccg_cuda:
+      command: ./hpccg.cuda.out 100 100 100
