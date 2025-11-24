@@ -56,6 +56,8 @@ using std::endl;
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
+#include <algorithm>
+#include <vector>
 #include "generate_matrix.hpp"
 void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, float **b, float **xexact)
 
@@ -66,109 +68,115 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, f
   int debug = 0;
 #endif
 
-#ifdef USING_MPI
-  int size, rank; // Number of MPI processes, My process ID
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  int size = 1; // Serial case (not using MPI)
-  int rank = 0;
-#endif
+  // Step 1: Create CSR matrix for a 27-point stencil on a
+  // nx by ny by nz domain
 
   *A = new HPC_Sparse_Matrix; // Allocate matrix struct and fill it
   (*A)->title = 0;
 
-
   // Set this bool to true if you want a 7-pt stencil instead of a 27 pt stencil
   bool use_7pt_stencil = false;
 
-  int local_nrow = nx*ny*nz; // This is the size of our subblock
-  assert(local_nrow>0); // Must have something to work with
-  int local_nnz = 27*local_nrow; // Approximately 27 nonzeros per row (except for boundary nodes)
+  int nrow = nx*ny*nz; // This is the size of our subblock
+  assert(nrow>0); // Must have something to work with
+  int nnz = 27*nrow; // Approximately 27 nonzeros per row (except for boundary nodes)  
 
-  int total_nrow = local_nrow*size; // Total number of grid points in mesh
-  long long total_nnz = 27* (long long) total_nrow; // Approximately 27 nonzeros per row (except for boundary nodes)
+  // Allocate CSR buffers
+  (*A)->nnzs = new int[nrow+1];
+  (*A)->nnzs[0] = 0;
+  (*A)->vals = new float[nnz];
+  (*A)->inds = new int   [nnz];
 
-  int start_row = local_nrow*rank; // Each processor gets a section of a chimney stack domain
-  int stop_row = start_row+local_nrow-1;
-  
+  // Allocate additional arrays
+  *x = new float[nrow];
+  *b = new float[nrow];
+  *xexact = new float[nrow];
 
-  // Allocate arrays that are of length local_nrow
-  (*A)->nnz_in_row = new int[local_nrow];
-  (*A)->nnz_in_row_acc = new int[local_nrow+1];
-  (*A)->nnz_in_row_acc[0] = 0;
-  (*A)->ptr_to_vals_in_row = new float*[local_nrow];
-  (*A)->ptr_to_inds_in_row = new int   *[local_nrow];
-  (*A)->ptr_to_diags       = new float*[local_nrow];
+  float * curvalptr = (*A)->vals;
+  int * curindptr = (*A)->inds;
 
-  *x = new float[local_nrow];
-  *b = new float[local_nrow];
-  *xexact = new float[local_nrow];
-
-
-  // Allocate arrays that are of length local_nnz
-  (*A)->list_of_vals = new float[local_nnz];
-  (*A)->list_of_inds = new int   [local_nnz];
-
-  float * curvalptr = (*A)->list_of_vals;
-  int * curindptr = (*A)->list_of_inds;
-
-  long long nnzglobal = 0;
   for (int iz=0; iz<nz; iz++) {
     for (int iy=0; iy<ny; iy++) {
       for (int ix=0; ix<nx; ix++) {
-	int curlocalrow = iz*nx*ny+iy*nx+ix;
-	int currow = start_row+iz*nx*ny+iy*nx+ix;
-	int nnzrow = 0;
-	(*A)->ptr_to_vals_in_row[curlocalrow] = curvalptr;
-	(*A)->ptr_to_inds_in_row[curlocalrow] = curindptr;
-	for (int sz=-1; sz<=1; sz++) {
-	  for (int sy=-1; sy<=1; sy++) {
-	    for (int sx=-1; sx<=1; sx++) {
-	      int curcol = currow+sz*nx*ny+sy*nx+sx;
+        int currow = iz*nx*ny+iy*nx+ix;
+        int nnzrow = 0;
+        for (int sz=-1; sz<=1; sz++) {
+          for (int sy=-1; sy<=1; sy++) {
+            for (int sx=-1; sx<=1; sx++) {
+      	      int curcol = currow+sz*nx*ny+sy*nx+sx;
 //            Since we have a stack of nx by ny by nz domains , stacking in the z direction, we check to see
 //            if sx and sy are reaching outside of the domain, while the check for the curcol being valid
 //            is sufficient to check the z values
-              if ((ix+sx>=0) && (ix+sx<nx) && (iy+sy>=0) && (iy+sy<ny) && (curcol>=0 && curcol<total_nrow)) {
+              if ((ix+sx>=0) && (ix+sx<nx) && (iy+sy>=0) && (iy+sy<ny) && (curcol>=0 && curcol<nrow)) {
                 if (!use_7pt_stencil || (sz*sz+sy*sy+sx*sx<=1)) { // This logic will skip over point that are not part of a 7-pt stencil
                   if (curcol==currow) {
-		    (*A)->ptr_to_diags[curlocalrow] = curvalptr;
-		    *curvalptr++ = 27.0;
-		  }
-		  else {
-		    *curvalptr++ = -1.0;
+	            	    *curvalptr++ = 27.0;
+		              } else {
+		                *curvalptr++ = -1.0;
                   }
-		  *curindptr++ = curcol;
-		  nnzrow++;
-	        } 
+		              *curindptr++ = curcol;
+		              nnzrow++;
+	              } 
               }
-	    } // end sx loop
+	          } // end sx loop
           } // end sy loop
         } // end sz loop
-	(*A)->nnz_in_row[curlocalrow] = nnzrow;
-  (*A)->nnz_in_row_acc[curlocalrow+1] = (*A)->nnz_in_row_acc[curlocalrow]+nnzrow;
-	nnzglobal += nnzrow;
-	(*x)[curlocalrow] = 0.0;
-	(*b)[curlocalrow] = 27.0 - ((float) (nnzrow-1));
-	(*xexact)[curlocalrow] = 1.0;
+        (*A)->nnzs[currow+1] = (*A)->nnzs[currow]+nnzrow;
+        (*x)[currow] = 0.0;
+        (*b)[currow] = 27.0 - ((float) (nnzrow-1));
+        (*xexact)[currow] = 1.0;
       } // end ix loop
      } // end iy loop
   } // end iz loop  
-  if (debug) cout << "Process "<<rank<<" of "<<size<<" has "<<local_nrow;
-  
-  if (debug) cout << " rows. Global rows "<< start_row
-		  <<" through "<< stop_row <<endl;
-  
-  if (debug) cout << "Process "<<rank<<" of "<<size
-		  <<" has "<<local_nnz<<" nonzeros."<<endl;
 
-  (*A)->start_row = start_row ; 
-  (*A)->stop_row = stop_row;
-  (*A)->total_nrow = total_nrow;
-  (*A)->total_nnz = total_nnz;
-  (*A)->local_nrow = local_nrow;
-  (*A)->local_ncol = local_nrow;
-  (*A)->local_nnz = local_nnz;
+  (*A)->nrow = nrow;
+  (*A)->ncol = nrow;
+  (*A)->nnz = nnz;
+
+  // Step 2: Add ellpack layout
+
+  // Find the maximum number of nonzeros per row
+  int max_nnz_per_row = 0;
+  for (int i = 0; i < (*A)->nrow; i++) {
+    int nnz_in_row = (*A)->nnzs[i+1] - (*A)->nnzs[i];
+    max_nnz_per_row = std::max(max_nnz_per_row, nnz_in_row);
+  }
+
+  // Ensure we don't exceed the ELLPACK width
+  int ellpack_cols = 32; // Default ELLPACK width
+  if (max_nnz_per_row > ellpack_cols) {
+    cerr << "Warning: Max nonzeros per row (" << max_nnz_per_row 
+         << ") exceeds ELLPACK width (" << ellpack_cols << "). Truncating." << endl;
+    max_nnz_per_row = ellpack_cols;
+  }
+
+  // Allocate new ELLPACK arrays
+  int ellpack_size = (*A)->nrow * ellpack_cols;
+  float* ellpack_vals = new float[ellpack_size];
+  int* ellpack_inds = new int[ellpack_size];
+
+  // Initialize arrays with zeros
+  for (int i = 0; i < ellpack_size; i++) {
+    ellpack_vals[i] = 0.0f;
+    ellpack_inds[i] = 0;  // Invalid index
+  }
+
+  // Convert CSR to ELLPACK format
+  for (int row = 0; row < (*A)->nrow; row++) {
+    int nnz_in_row = std::min((*A)->nnzs[row+1] - (*A)->nnzs[row], ellpack_cols);
+    
+    for (int j = 0; j < nnz_in_row; j++) {
+      int ellpack_idx = row * ellpack_cols + j;
+      int csr_idx = (*A)->nnzs[row] + j;
+      
+      ellpack_vals[ellpack_idx] = (*A)->vals[csr_idx];
+      ellpack_inds[ellpack_idx] = (*A)->inds[csr_idx];
+    }
+  }
+  
+  (*A)->ellpack_vals = ellpack_vals;
+  (*A)->ellpack_inds = ellpack_inds;
+  (*A)->ellpack_cols = 32;
 
   return;
 }

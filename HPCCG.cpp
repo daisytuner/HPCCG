@@ -78,11 +78,8 @@ void HPCCG(HPC_Sparse_Matrix * A,
   double t_begin = mytimer();  // Start timing right away
 
   double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0;
-#ifdef USING_MPI
-  double t5 = 0.0;
-#endif
-  int nrow = A->local_nrow;
-  int ncol = A->local_ncol;
+  int nrow = A->nrow;
+  int ncol = A->ncol;
 
   float * r = new float [nrow];
   float * p = new float [ncol]; // In parallel case, A is rectangular
@@ -92,12 +89,7 @@ void HPCCG(HPC_Sparse_Matrix * A,
   float rtrans = 0.0f;
   float oldrtrans = 0.0f;
 
-#ifdef USING_MPI
-  int rank; // Number of MPI processes, My process ID
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
   int rank = 0; // Serial case (not using MPI)
-#endif
 
   int print_freq = max_iter/10; 
   if (print_freq>50) print_freq=50;
@@ -105,9 +97,6 @@ void HPCCG(HPC_Sparse_Matrix * A,
 
   // p is of length ncols, copy x to p for sparse MV operation
   TICK(); waxpby(nrow, 1.0f, x, 0.0f, x, p); TOCK(t2);
-#ifdef USING_MPI
-  TICK(); exchange_externals(A,p); TOCK(t5); 
-#endif
   TICK(); HPC_sparsemv(A, p, Ap); TOCK(t3);
   TICK(); waxpby(nrow, 1.0f, b, -1.0f, Ap, r); TOCK(t2);
   TICK(); ddot(nrow, r, r, &rtrans, t4); TOCK(t1);
@@ -133,9 +122,6 @@ void HPCCG(HPC_Sparse_Matrix * A,
       cout << "Iteration = "<< k << "   Residual = "<< normr << endl;
      
 
-#ifdef USING_MPI
-      TICK(); exchange_externals(A,p); TOCK(t5); 
-#endif
       TICK(); HPC_sparsemv(A, p, Ap); TOCK(t3); // 2*nnz ops
       float alpha = 0.0f;
       TICK(); ddot(nrow, p, Ap, &alpha, t4); TOCK(t1); // 2*nrow ops
@@ -150,9 +136,6 @@ void HPCCG(HPC_Sparse_Matrix * A,
   times[2] = t2; // waxpby time
   times[3] = t3; // sparsemv time
   times[4] = t4; // AllReduce time
-#ifdef USING_MPI
-  times[5] = t5; // exchange boundary time
-#endif
   delete [] p;
   delete [] Ap;
   delete [] r;

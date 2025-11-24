@@ -61,21 +61,35 @@ using std::endl;
 #include <cassert>
 #include <string>
 #include <cmath>
+#include <filesystem>
 #include "HPC_sparsemv.hpp"
 
 void HPC_sparsemv( HPC_Sparse_Matrix *A, 
 		 const float * const x, float * const y)
 {
+  // CSR
+  // const int nrow = (const int) A->nrow;
 
-  const int nrow = (const int) A->local_nrow;
+  // for (int i=0; i< nrow; i++)
+  //   {
+  //     float sum = 0.0;
+  //     const int begin = A->nnzs[i];
+  //     const int end = A->nnzs[i+1];
+  //     for (int j=begin; j< end; j++)
+  //         sum += A->vals[j]*x[A->inds[j]];
+  //     y[i] = sum;
+  //   }
 
+  // ELLPACK
+  const int nrow = (const int) A->nrow;
+  const int ncol_per_row = (const int) A->ellpack_cols;
   for (int i=0; i< nrow; i++)
     {
-      float sum = 0.0;
-      const int begin = A->nnz_in_row_acc[i];
-      const int end = A->nnz_in_row_acc[i+1];
-      for (int j=begin; j< end; j++)
-          sum += A->list_of_vals[j]*x[A->list_of_inds[j]];
+      float sum = 0.0f;
+      for (int j=0; j < ncol_per_row; j++) {
+        sum += A->ellpack_vals[i * ncol_per_row + j] * x[A->ellpack_inds[i * ncol_per_row + j]];
+      }
       y[i] = sum;
     }
 }
+

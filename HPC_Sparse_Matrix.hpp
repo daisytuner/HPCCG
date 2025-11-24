@@ -43,56 +43,26 @@
 #ifndef HPC_SPARSE_MATRIX_H
 #define HPC_SPARSE_MATRIX_H
 
-// These constants are upper bounds that might need to be changes for 
-// pathological matrices, e.g., those with nearly dense rows/columns.
-
-const int max_external = 100000;
-const int max_num_messages = 500;
-const int max_num_neighbors = max_num_messages;
-
-
 struct HPC_Sparse_Matrix_STRUCT {
-  char   *title;
-  int start_row;
-  int stop_row;
-  int total_nrow;
-  long long total_nnz;
-  int local_nrow;
-  int local_ncol;  // Must be defined in make_local_matrix
-  int local_nnz;
-  int  * nnz_in_row;
-  int  * nnz_in_row_acc;
-  float ** ptr_to_vals_in_row;
-  int ** ptr_to_inds_in_row;
-  float ** ptr_to_diags;
+  char *title;
+  int nrow;
+  int ncol;
+  int nnz;
 
-#ifdef USING_MPI
-  int num_external;
-  int num_send_neighbors;
-  int *external_index;
-  int *external_local_index;
-  int total_to_be_sent;
-  int *elements_to_send;
-  int *neighbors;
-  int *recv_length;
-  int *send_length;
-  float *send_buffer;
-#endif
+  // CSR format arrays
+  int *nnzs;
+  float *vals;
+  int *inds;
 
-  float *list_of_vals;   //needed for cleaning up memory
-  int *list_of_inds;      //needed for cleaning up memory
-
+  // ELLPACK format arrays
+  int ellpack_cols;
+  int *ellpack_inds;
+  float *ellpack_vals;
 };
+
 typedef struct HPC_Sparse_Matrix_STRUCT HPC_Sparse_Matrix;
 
-
 void destroyMatrix(HPC_Sparse_Matrix * &A);
-
-#ifdef USING_SHAREDMEM_MPI
-#ifndef SHAREDMEM_ALTERNATIVE
-void destroySharedMemMatrix(HPC_Sparse_Matrix * &A);
-#endif
-#endif
 
 #endif
 
