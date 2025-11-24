@@ -484,6 +484,8 @@ void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
     false
   );
   // Launch the matrix-vector multiplication kernel
+  auto e = std::getenv("TT_HPCCG_KERNEL_DIR");
+  std::filesystem::path kernel_dir = std::filesystem::path(e);
   tt::daisy::tt_launch_ellpack_matVecOp(
     device,
     nrow,  // cell_count should be number of rows
@@ -492,7 +494,7 @@ void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
     d_ellpack_addrs,
     *d_inVec,
     *d_resVec,
-    std::filesystem::path("/home/lukas/repos/HPCCG/tenstorrent/rtl/kernels"),  // kernel directory
+    kernel_dir,  // kernel directory
     tt::daisy::EllpackHwImpl::None  // hardware implementation type
   );
   // Read result back to host with non-blocking call

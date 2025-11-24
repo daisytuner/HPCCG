@@ -83,17 +83,19 @@ void HPC_sparsemv( HPC_Sparse_Matrix *A,
   //   }
 
   // ELLPACK
-  // const int nrow = (const int) A->nrow;
-  // const int ncol_per_row = (const int) A->ellpack_cols;
-  // for (int i=0; i< nrow; i++)
-  //   {
-  //     float sum = 0.0f;
-  //     for (int j=0; j < ncol_per_row; j++) {
-  //       sum += A->ellpack_vals[i * ncol_per_row + j] * x[A->ellpack_inds[i * ncol_per_row + j]];
-  //     }
-  //     y[i] = sum;
-  //   }
-
+#ifdef USING_TT_RTL
   tt::daisy::tt_ellpack_matVec(A->nrow, A->ncol, A->ellpack_nnz, A->ellpack_cols, A->ellpack_vals, A->ellpack_inds, x, y);
+#else
+  const int nrow = (const int) A->nrow;
+  const int ncol_per_row = (const int) A->ellpack_cols;
+  for (int i=0; i< nrow; i++)
+    {
+      float sum = 0.0f;
+      for (int j=0; j < ncol_per_row; j++) {
+        sum += A->ellpack_vals[i * ncol_per_row + j] * x[A->ellpack_inds[i * ncol_per_row + j]];
+      }
+      y[i] = sum;
+    }
+#endif
 }
 
