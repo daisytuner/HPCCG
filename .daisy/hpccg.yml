@@ -16,13 +16,13 @@ steps:
     export DOCC_CI=regions
 
     # Baseline
-    docc-cpp -O3 -g -mllvm -docc-tune=none -UUSING_MPI main.cpp generate_matrix.cpp make_local_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp exchange_externals.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.out
+    docc-cpp -O3 -g -mllvm -docc-tune=none main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.out
     
     # Auto-parallelized with OpenMP
-    docc-cpp -O3 -g -mllvm -docc-tune=openmp -UUSING_MPI main.cpp generate_matrix.cpp make_local_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp exchange_externals.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.openmp.out
+    docc-cpp -O3 -g -mllvm -docc-tune=openmp main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.openmp.out
 
     # Auto-offloaded to CUDA
-    docc-cpp -O3 -g -mllvm -docc-tune=cuda -UUSING_MPI main.cpp generate_matrix.cpp make_local_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp exchange_externals.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.cuda.out
+    docc-cpp -O3 -g -mllvm -docc-tune=cuda main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.cuda.out
 
   run:
     hpccg:
