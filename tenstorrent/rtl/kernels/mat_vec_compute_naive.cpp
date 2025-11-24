@@ -29,16 +29,20 @@ void compute_mat_mul(float* dat_ptr, uint32_t* addr_ptr, float* collect_ptr, flo
 
     float* collect_row = collect_ptr;
     float* dat_row = dat_ptr;
+    uint32_t* addr_row_ptr = addr_ptr;
+
     for (int idx = 0; idx < 32; ++idx) { // row and col of result of matmul
 
-        uint32_t* addr_row = addr_ptr + 32 * idx;
+        uint32_t* addr_row = addr_row_ptr;
 
         float sum = 0.0f;
         float* dat_entry = dat_row;
         float* collect_entry = collect_row;
+        uint32_t* addr_entry = addr_row;
+
         for (int k = 0; k < 32; ++k) {
             bool face_left = k < 16;
-            uint32_t adr = addr_row[k];
+            uint32_t adr = *addr_entry;
             if (adr != UINT32_MAX) {
                 float mat_in = *dat_entry;
                 float vec_in = *collect_entry;
@@ -50,9 +54,11 @@ void compute_mat_mul(float* dat_ptr, uint32_t* addr_ptr, float* collect_ptr, flo
                 if (k == 15) {
                     collect_entry += NEXT_FACE_COL_OFFSET;
                     dat_entry += NEXT_FACE_COL_OFFSET;
+                    addr_entry += NEXT_FACE_COL_OFFSET;
                 } else {
                     collect_entry += 1;
                     dat_entry += 1;
+                    addr_entry += 1;
                 }
             } else {
                 break; // early abort, because right now it's left-aligned
@@ -63,9 +69,11 @@ void compute_mat_mul(float* dat_ptr, uint32_t* addr_ptr, float* collect_ptr, flo
         if (idx == 15) {
             collect_row += NEXT_FACE_ROW_OFFSET;
             dat_row += NEXT_FACE_ROW_OFFSET;
+            addr_row_ptr += NEXT_FACE_ROW_OFFSET;
         } else {
             collect_row += NEXT_ROW_OFFSET;
             dat_row += NEXT_ROW_OFFSET;
+            addr_row_ptr += NEXT_ROW_OFFSET;
         }
     }
 }
