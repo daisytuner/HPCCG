@@ -495,7 +495,7 @@ void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
     *d_inVec,
     *d_resVec,
     kernel_dir,  // kernel directory
-    tt::daisy::EllpackHwImpl::None  // hardware implementation type
+    tt::daisy::EllpackHwImpl::FPU  // hardware implementation type
   );
   // Read result back to host with non-blocking call
   tt::tt_metal::EnqueueReadBuffer(
