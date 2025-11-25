@@ -1,0 +1,12 @@
+.vscode/
+
+build/
+
+*.bc
+*.o
+*.obj
+*.exe
+*.out
+*.dot
+*.json
+*.txt

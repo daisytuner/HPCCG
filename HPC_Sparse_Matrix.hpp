@@ -56,6 +56,7 @@ struct HPC_Sparse_Matrix_STRUCT {
 
   // ELLPACK format arrays
   int ellpack_cols;
+  int ellpack_nnz;
   int *ellpack_inds;
   float *ellpack_vals;
 };

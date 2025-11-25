@@ -24,12 +24,29 @@ steps:
     # Auto-offloaded to CUDA
     docc-cpp -O3 -g -mllvm -docc-tune=cuda main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.cuda.out
 
+    # Auto-offloaded to Tenstorrent (temporarily: rtl)
+
+    # Build rtl
+    cd tenstorrent/rtl
+    mkdir build && cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    make -j$(nproc)
+
+    # Build HPCCG with Tenstorrent rtl
+    cd ../../../
+    docc-cpp -O3 -g -mllvm -docc-tune=none -DUSING_TT_RTL main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -L./tenstorrent/rtl/build -L/tenstorrent/tt-metalium/build/lib -lm -ldaisy_tt_rt -ltt_metal -lfmt -o hpccg.tenstorrent.out
+
   run:
     hpccg:
-      command: ./hpccg.out 100 100 100
+      command: ./hpccg.out 50 50 50
     hpccg_openmp:
-      command: ./hpccg.openmp.out 100 100 100
+      command: ./hpccg.openmp.out 50 50 50
       env:
         OMP_NUM_THREADS: 8
     hpccg_cuda:
-      command: ./hpccg.cuda.out 100 100 100
+      command: ./hpccg.cuda.out 50 50 50
+    hpccg_tenstorrent:
+      command: ./hpccg.tenstorrent.out 50 50 50
+      env:
+        TT_HPCCG_KERNEL_DIR: /workspace/tenstorrent/rtl/kernels
+        LD_LIBRARY_PATH: /tenstorrent/tt-metalium/build/lib:$LD_LIBRARY_PATH
