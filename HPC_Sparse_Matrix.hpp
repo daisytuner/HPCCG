@@ -43,6 +43,8 @@
 #ifndef HPC_SPARSE_MATRIX_H
 #define HPC_SPARSE_MATRIX_H
 
+#include <cstdint>
+
 struct HPC_Sparse_Matrix_STRUCT {
   char *title;
   int nrow;
@@ -59,6 +61,8 @@ struct HPC_Sparse_Matrix_STRUCT {
   int ellpack_nnz;
   int *ellpack_inds;
   float *ellpack_vals;
+  uint32_t *ellpack_row_min_cols;
+  uint32_t *ellpack_row_max_cols;
 };
 
 typedef struct HPC_Sparse_Matrix_STRUCT HPC_Sparse_Matrix;

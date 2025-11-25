@@ -17,6 +17,8 @@ void kernel_main() {
     uint32_t num_tiles = get_arg_val<uint32_t>(1); // how many tiles to read from the matrix
     uint32_t batches = get_arg_val<uint32_t>(2);
     uint32_t tiles_per_batch = get_arg_val<uint32_t>(3);
+    uint32_t start_chunk = get_arg_val<uint32_t>(4);
+    uint32_t num_chunks = get_arg_val<uint32_t>(5);
 
     constexpr uint8_t cb_dat = 1;
     constexpr uint8_t cb_addr = 2;
@@ -61,12 +63,13 @@ void kernel_main() {
                 addr_wr_addr += mat_page_size;
             }
 
-            for (uint32_t vec_chunk = 0; vec_chunk < vec_chunks; ++vec_chunk) { //TODO batch vec chunks (separately from tiles)
+            for (uint32_t i = 0; i < num_chunks; ++i) { //TODO batch vec chunks (separately from tiles)
+                uint32_t vec_chunk = start_chunk + i;
                 cb_reserve_back(cb_inVec, 1);
                 auto vec_ptr = get_write_ptr(cb_inVec);
                 noc_async_read_page(vec_chunk, vec_buf, vec_ptr);
                 noc_async_read_barrier();
-                if (vec_chunk == 0) { // we let the batch reads run concurrent with the first vecChunk, so mark them as available now
+                if (i == 0) { // we let the batch reads run concurrent with the first vecChunk, so mark them as available now
                     // DeviceZoneScopedN("PushingTiles");
                     // float* dat_ptr = reinterpret_cast<float*>(get_write_ptr(cb_dat));
                     // for (int d = 0; d < 16; ++d) {

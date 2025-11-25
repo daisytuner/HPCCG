@@ -86,6 +86,8 @@ void MAIN {
     uint32_t batches = get_arg_val<uint32_t>(0);
     uint32_t tiles_per_batch = get_arg_val<uint32_t>(1);
     uint32_t num_tiles = get_arg_val<uint32_t>(2);
+    uint32_t start_chunk = get_arg_val<uint32_t>(3);
+    uint32_t num_chunks = get_arg_val<uint32_t>(4);
 
     constexpr uint8_t cb_res = 0;
     constexpr uint8_t cb_dat = 1;
@@ -121,12 +123,13 @@ void MAIN {
             cb_addr,
             cb_collect,
             cb_vec,
-            vec_chunks,
+            num_chunks,
             vecs_per_chunk,
             tile, end_tile_in_batch,
             vec_chunk_batch_size,
             stream_vec || (b == 0),
-            stream_vec || (b == (batches - 1))
+            stream_vec || (b == (batches - 1)),
+            start_chunk
         );
 
         UNPACK(DPRINT << "Unpack done" << ENDL());

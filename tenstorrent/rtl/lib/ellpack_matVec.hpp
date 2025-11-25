@@ -10,21 +10,35 @@ enum class EllpackHwImpl {
     SFPU = 2
 };
 
-constexpr EllpackHwImpl default_ellpack_hw_impl = EllpackHwImpl::None;
+/**
+ * @brief Parameters for ELLPACK matrix-vector multiplication
+ */
+struct ELLPACKMatVecParams {
+    // Data pointers
+    const float * vals;
+    const int * inds;
 
-// Perform ELLPACK sparse matrix-vector multiplication: y = A * x
-// Parameters:
-//   nrow: number of rows in the matrix
-//   ncol: number of columns in the matrix
-//   ellpack_nnz: total size of ELLPACK arrays (nrow * ellpack_cols)
-//   ellpack_cols: number of columns in the ELLPACK representation
-//   vals: ELLPACK values array (size nnz)
-//   inds: ELLPACK column indices array (size nnz)
-//   x: input vector (size ncol)
-//   y: output vector (size nrow)
-void tt_ellpack_matVec(int nrow, int ncol, int ellpack_nnz, int ellpack_cols,
-                     const float * const vals,
-                     const int * const inds,
-		 const float * const x, float * const y);
+    // Matrix dimensions and properties
+    int nrow;
+    int ncol;
+    int ellpack_nnz;
+    int ellpack_cols;
+
+    // Input vector properties
+    const uint32_t* row_min_cols;
+    const uint32_t* row_max_cols;
+
+    // Hardware implementation to use
+    EllpackHwImpl hw_impl = EllpackHwImpl::FPU;
+};
+
+/**
+ * @brief Perform ELLPACK sparse matrix-vector multiplication: y = A * x
+ * 
+ * @param params Parameters for the ELLPACK matrix-vector multiplication
+ * @param x Input vector
+ * @param y Output vector
+ */
+void tt_ellpack_matVec(const ELLPACKMatVecParams& params, const float * x, float * y);
 
 }   // namespace tt::daisy

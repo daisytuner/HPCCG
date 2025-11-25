@@ -104,7 +104,8 @@ void tt_launch_ellpack_matVecOp(
     tt::tt_metal::Buffer& d_inVec,
     tt::tt_metal::Buffer& d_resVec,
     const std::filesystem::path& kernel_dir,
-    EllpackHwImpl hwImpl
+    EllpackHwImpl hwImpl,
+    const std::vector<std::pair<uint32_t, uint32_t>>& row_tile_min_max
 ) {
     // static int invocation = 0;
 
@@ -316,6 +317,28 @@ void tt_launch_ellpack_matVecOp(
                 tiles = end_tile - start_tile;
             }
 
+            uint32_t min_col = UINT32_MAX;
+            uint32_t max_col = 0;
+            for (uint32_t t = 0; t < tiles; ++t) {
+                uint32_t tile_idx = start_tile + t;
+                if (tile_idx < row_tile_min_max.size()) {
+                    auto [t_min, t_max] = row_tile_min_max[tile_idx];
+                    if (t_min < min_col) min_col = t_min;
+                    if (t_max > max_col) max_col = t_max;
+                }
+            }
+
+            uint32_t start_chunk = 0;
+            uint32_t num_chunks = vec_chunks_total;
+
+            if (min_col <= max_col) {
+                start_chunk = min_col / vec_entries_per_chunk;
+                uint32_t end_chunk = max_col / vec_entries_per_chunk;
+                num_chunks = end_chunk - start_chunk + 1;
+            } else {
+                num_chunks = 0;
+            }
+
             tt::tt_metal::SetRuntimeArgs(
                 program,
                 kernel_rd_0,
@@ -324,7 +347,9 @@ void tt_launch_ellpack_matVecOp(
                     start_tile,
                     tiles,
                     units,
-                    batch_size
+                    batch_size,
+                    start_chunk,
+                    num_chunks
                 }
             );
 
@@ -335,7 +360,9 @@ void tt_launch_ellpack_matVecOp(
                 {
                     units,
                     batch_size,
-                    tiles
+                    tiles,
+                    start_chunk,
+                    num_chunks
                 }
             );
 
@@ -358,20 +385,17 @@ void tt_launch_ellpack_matVecOp(
     tt_metal::EnqueueProgram(device->command_queue(0), program, false);
 }
 
-void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
-                     const float * const vals,
-                     const int * const inds,
-		 const float * const x, float * const y)
+void tt_ellpack_matVec(const ELLPACKMatVecParams& params, const float * x, float * y)
 {
   tt_metal::IDevice* device = get_device();
   
   // Tilize matrix values and indices
   std::vector<float> tilized_vals;
-  tilize_buffer(tilized_vals, vals, nrow, ellpack_cols, ellpack_cols, 0.0f);
+  tilize_buffer(tilized_vals, params.vals, params.nrow, params.ellpack_cols, params.ellpack_cols, 0.0f);
   
   std::vector<uint32_t> tilized_inds;
   // Cast int* to uint32_t* for tilize_buffer
-  tilize_buffer(tilized_inds, (const uint32_t*)inds, nrow, ellpack_cols, ellpack_cols, (uint32_t)UINT32_MAX);
+  tilize_buffer(tilized_inds, (const uint32_t*)params.inds, params.nrow, params.ellpack_cols, params.ellpack_cols, (uint32_t)UINT32_MAX);
 
   // Create buffers for matrix values and indices
   size_t vals_buffer_size = tilized_vals.size() * sizeof(float);
@@ -419,7 +443,7 @@ void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
   }
 
   // Create buffers for input and output vectors
-  size_t inVec_buffer_size = sizeof(float) * ncol;
+  size_t inVec_buffer_size = sizeof(float) * params.ncol;
   size_t page_size = 1024;
   
   std::shared_ptr<tt::tt_metal::Buffer> d_inVec;
@@ -441,7 +465,7 @@ void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
     });
   }
 
-  size_t resVec_buffer_size = sizeof(float) * nrow;
+  size_t resVec_buffer_size = sizeof(float) * params.nrow;
   
   std::shared_ptr<tt::tt_metal::Buffer> d_resVec;
   if (resVec_buffer_size > page_size) {
@@ -483,19 +507,38 @@ void tt_ellpack_matVec(int nrow, int ncol, int nnz, int ellpack_cols,
     x,
     false
   );
+
+    int num_tiles_r = (params.nrow + 31) / 32;
+    std::vector<std::pair<uint32_t, uint32_t>> row_tile_min_max(num_tiles_r);
+
+    for (int tr = 0; tr < num_tiles_r; ++tr) {
+        uint32_t min_val = UINT32_MAX;
+        uint32_t max_val = 0;
+        for (int r = 0; r < 32; ++r) {
+            int global_r = tr * 32 + r;
+            if (global_r >= params.nrow) break;
+            uint32_t row_min = params.row_min_cols[global_r];
+            uint32_t row_max = params.row_max_cols[global_r];
+            if (row_min < min_val) min_val = row_min;
+            if (row_max > max_val) max_val = row_max;
+        }
+        row_tile_min_max[tr] = {min_val, max_val};
+    }
+
   // Launch the matrix-vector multiplication kernel
   auto e = std::getenv("TT_HPCCG_KERNEL_DIR");
   std::filesystem::path kernel_dir = std::filesystem::path(e);
   tt::daisy::tt_launch_ellpack_matVecOp(
     device,
-    nrow,  // cell_count should be number of rows
-    ellpack_cols,   // ellpack_cols passed from caller
+    params.nrow,  // cell_count should be number of rows
+    params.ellpack_cols,   // ellpack_cols passed from caller
     d_ellpack_vals,
     d_ellpack_addrs,
     *d_inVec,
     *d_resVec,
     kernel_dir,  // kernel directory
-    tt::daisy::EllpackHwImpl::None  // hardware implementation type
+    params.hw_impl,  // hardware implementation type
+    row_tile_min_max
   );
   // Read result back to host with non-blocking call
   tt::tt_metal::EnqueueReadBuffer(
