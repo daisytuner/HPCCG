@@ -43,8 +43,8 @@ steps:
       command: ./hpccg.openmp.out 50 50 50
       env:
         OMP_NUM_THREADS: 8
-    # hpccg_cuda:
-    #   command: ./hpccg.cuda.out 50 50 50
+    hpccg_cuda:
+      command: ./hpccg.cuda.out 50 50 50
     hpccg_tenstorrent:
       command: ./hpccg.tenstorrent.out 50 50 50
       env:
