@@ -67,6 +67,12 @@ void destroyMatrix(HPC_Sparse_Matrix * &A)
   if (A->ellpack_vals) {
     delete [] A->ellpack_vals;
   }
+  if (A->ellpack_row_min_cols) {
+    delete [] A->ellpack_row_min_cols;
+  }
+  if (A->ellpack_row_max_cols) {
+    delete [] A->ellpack_row_max_cols;
+  }
 
   delete A;
   A = 0;

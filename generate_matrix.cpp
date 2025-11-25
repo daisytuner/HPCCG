@@ -155,6 +155,8 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, f
   int ellpack_size = (*A)->nrow * ellpack_cols;
   float* ellpack_vals = new float[ellpack_size];
   int* ellpack_inds = new int[ellpack_size];
+  uint32_t* ellpack_row_min_cols = new uint32_t[(*A)->nrow];
+  uint32_t* ellpack_row_max_cols = new uint32_t[(*A)->nrow];
 
   // Initialize arrays with zeros and invalid indices  
   for (int i = 0; i < ellpack_size; i++) {
@@ -175,8 +177,26 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, float **x, f
     }
   }
   
+  // Compute min and max column indices for each row
+  for (int row = 0; row < (*A)->nrow; row++) {
+    uint32_t min_col = UINT32_MAX;
+    uint32_t max_col = 0;
+    for (int j = 0; j < ellpack_cols; j++) {
+      int ellpack_idx = row * ellpack_cols + j;
+      uint32_t col_idx = (uint32_t)ellpack_inds[ellpack_idx];
+      if (col_idx != UINT32_MAX) {
+        if (col_idx < min_col) min_col = col_idx;
+        if (col_idx > max_col) max_col = col_idx;
+      }
+    }
+    ellpack_row_min_cols[row] = min_col;
+    ellpack_row_max_cols[row] = max_col;
+  }
+
   (*A)->ellpack_vals = ellpack_vals;
   (*A)->ellpack_inds = ellpack_inds;
+  (*A)->ellpack_row_min_cols = ellpack_row_min_cols;
+  (*A)->ellpack_row_max_cols = ellpack_row_max_cols;
   (*A)->ellpack_cols = ellpack_cols;
   (*A)->ellpack_nnz = ellpack_size;
 

@@ -87,13 +87,14 @@ static inline void unpacker_collect(
     uint8_t cb_addr,
     uint8_t cb_collect,
     uint8_t cb_vec,
-    uint32_t vec_chunks,
+    uint32_t num_chunks,
     uint32_t vecs_per_chunk,
     uint32_t start_tile,
     uint32_t end_tile,
     uint32_t chunk_batch_size = 1,
     bool load_vecs = true,
-    bool unload_vecs = true
+    bool unload_vecs = true,
+    uint32_t start_chunk_idx = 0
 ) {
 #ifdef TRISC_UNPACK
     uint32_t* addr_ptr = reinterpret_cast<uint32_t*>(CB_RD_PTR(cb_addr));
@@ -109,7 +110,8 @@ static inline void unpacker_collect(
 
     uint32_t num_tiles = end_tile - start_tile;
 
-    for (uint32_t v = 0; v < vec_chunks; ++v) {
+    for (uint32_t i = 0; i < num_chunks; ++i) {
+        uint32_t v = start_chunk_idx + i;
         if (load_vecs) {
             cb_wait_front(cb_vec, chunk_batch_size);
         }
