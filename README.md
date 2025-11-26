@@ -14,13 +14,21 @@ To ease analysis, we have made the following changes to the original code:
 ## Port to Tenstorrent Wormhole and Blackhole
 
 The Tenstorrent Wormhole and Blackhole are PCIe-based AI accelerator cards.
-Each processor contains multiple **tensix cores**, and each tensix core comprises several RISC-V cores that execute instruction pipelines.
-In addition, every tensix core integrates both a matrix unit and a vector unit to deliver high-throughput computation.
+Each card contains many **Tensix processors**, and each Tensix Processor comprises several RISC-V cores, local memory and more specialized functional units.
+
+<img width="300" alt="image" src="figures/tenstorrent-wormhole-logical-noc-diagram.webp">
+<img width="500" alt="image" src="figures/tenstorrent-tensix-rough-block-diagram.webp">
+
+[source1](https://github.com/tenstorrent/tt-metal/blob/main/docs/source/common/images/tenstorrent-wormhole-logical-noc-diagram.webp)
+[source2](https://github.com/tenstorrent/tt-metal/blob/main/docs/source/common/images/tenstorrent-tensix-rough-block-diagram.webp)
+
+Every Tensix processor has both a specialized matrix unit and a vector unit to deliver high-throughput computation on blocks of data. The RISC-V cores can do general purpose work and coordinate the hardware units and organize data transfers into and out of memory.
+
 Floating-point precision varies with the specific hardware units:
 
 - FP32 on the RISC-V cores with soft-float.
-- FP32 on the vector unit with special handling of subnormals.
-- TensorFloat-32 on the matrix unit.
+- near-IEEE754-compliant FP32 on the vector unit (no subnormals, reduced overflow/underflow).
+- hybrid, similar to TensorFloat-32 precision on the matrix unit (same divergence from IEEE as vector unit).
 
 Since the conjugate gradient method is dominated by sparse matrix–vector multiplication (SPMV), the goal is to evaluate the accelerator’s capabilities for sparse linear algebra while maintaining adequate numerical stability (convergence of solver / residual).
 DOCC relies on four main components to port the application:
