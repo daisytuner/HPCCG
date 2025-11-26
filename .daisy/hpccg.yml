@@ -39,14 +39,18 @@ steps:
   run:
     hpccg:
       command: ./hpccg.out 50 50 50
+      energy: true
     hpccg_openmp:
       command: ./hpccg.openmp.out 50 50 50
+      energy: true
       env:
         OMP_NUM_THREADS: 8
     hpccg_cuda:
       command: ./hpccg.cuda.out 50 50 50
+      energy: true
     hpccg_tenstorrent:
       command: ./hpccg.tenstorrent.out 50 50 50
+      energy: true
       env:
         TT_HPCCG_KERNEL_DIR: /workspace/tenstorrent/rtl/kernels
         LD_LIBRARY_PATH: /tenstorrent/tt-metalium/build/lib:/workspace/tenstorrent/rtl/build:$LD_LIBRARY_PATH
