@@ -29,8 +29,19 @@ steps:
     # Build rtl
     cd tenstorrent/rtl
     mkdir build && cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
+    # cmake .. -DCMAKE_BUILD_TYPE=Release
+    # make -j$(nproc)
+    # mv libdaisy_tt_rt.so ../../../libdaisy_tt_rt.so
+    # rm -rf *
+
+    export CPATH=$DOCC_ROOT/include:$CPATH
+    export LIBRARY_PATH=$DOCC_ROOT/lib:$LIBRARY_PATH
+
+    ## Build intrumented rtl
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_DAISY_RTL=ON
     make -j$(nproc)
+    # mv libdaisy_tt_rt.so libdaisy_tt_rt.instrumented.so
+    # mv ../../../libdaisy_tt_rt.so .
 
     # Build HPCCG with Tenstorrent rtl
     cd ../../../
@@ -45,9 +56,9 @@ steps:
       energy: true
       env:
         OMP_NUM_THREADS: 8
-    hpccg_cuda:
-      command: ./hpccg.cuda.out 50 50 50
-      energy: true
+    # hpccg_cuda:
+    #   command: ./hpccg.cuda.out 50 50 50
+    #   energy: true
     hpccg_tenstorrent:
       command: ./hpccg.tenstorrent.out 50 50 50
       energy: true

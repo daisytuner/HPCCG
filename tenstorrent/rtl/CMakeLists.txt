@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(daisy-tt-rt VERSION 0.0.1 DESCRIPTION "A library providing ELLPACK-based MatVec")
 
+option(ENABLE_DAISY_RTL "Enable Region-based Instrumentation" OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CPM)
 
@@ -18,6 +20,15 @@ target_compile_options(daisy_tt_rt PRIVATE
 target_compile_definitions(daisy_tt_rt PUBLIC
     SPDLOG_FMT_EXTERNAL
 )
+if (ENABLE_DAISY_RTL)
+    message(STATUS "Building with DAISY instrumentation")
+    target_compile_definitions(daisy_tt_rt PRIVATE
+        ENABLE_DAISY_RTL
+    )
+    target_link_libraries(daisy_tt_rt PRIVATE
+        daisy_rtl arg_capture_io
+    )
+endif()
 
 if(NOT $ENV{TT_METAL_INSTALL_DIR} STREQUAL "")
     message(STATUS "Building against Tenstorrent Metalium installation from TT_METAL_INSTALL_DIR: $ENV{TT_METAL_INSTALL_DIR}")
