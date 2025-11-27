@@ -12,6 +12,10 @@
 #include <tt-metalium/tensor_accessor_args.hpp>
 #include <tt-metalium/tt_metal.hpp>
 
+#ifdef ENABLE_DAISY_RTL
+#include <daisy_rtl/daisy_rtl.h>
+#endif
+
 #define PAGE_SIZE 1024u
 
 namespace tt::daisy {
@@ -824,6 +828,21 @@ void _ZN2tt5daisy23tt_ellpack_matVec_kernel(
     void * d_resVec_ptr
 )
 {
+#ifdef ENABLE_DAISY_RTL
+    __daisy_metadata_t metadata_kernel = {
+        .file_name = "ellpack_matVec.cpp",
+        .function_name = "tt::daisy::ellpack_matVec_kernel",
+        .line_begin = 810,
+        .line_end = 883,
+        .column_begin = 0,
+        .column_end = 0,
+        .target_type = "TENSTORRENT",
+        .region_uuid = "foam_ellpack_matVec_kernel"
+    };
+    unsigned long long region_kernel = __daisy_instrumentation_init(&metadata_kernel, __DAISY_EVENT_SET_NONE);
+    __daisy_instrumentation_enter(region_kernel);
+#endif
+
     auto d_ellpack_vals = *static_cast<std::shared_ptr<tt::tt_metal::Buffer>*>(d_ellpack_vals_ptr);
     auto d_ellpack_addrs = *static_cast<std::shared_ptr<tt::tt_metal::Buffer>*>(d_ellpack_addrs_ptr);
     auto d_inVec = *static_cast<std::shared_ptr<tt::tt_metal::Buffer>*>(d_inVec_ptr);
@@ -833,7 +852,6 @@ void _ZN2tt5daisy23tt_ellpack_matVec_kernel(
   
     int num_tiles_r = (nrow + 31) / 32;
     std::vector<std::pair<uint32_t, uint32_t>> row_tile_min_max(num_tiles_r);
-
     for (int tr = 0; tr < num_tiles_r; ++tr) {
         uint32_t min_val = UINT32_MAX;
         uint32_t max_val = 0;
@@ -848,22 +866,28 @@ void _ZN2tt5daisy23tt_ellpack_matVec_kernel(
         row_tile_min_max[tr] = {min_val, max_val};
     }
 
-    // Launch the matrix-vector multiplication kernel
     auto e = std::getenv("TT_HPCCG_KERNEL_DIR");
     std::filesystem::path kernel_dir = std::filesystem::path(e);
     tt::daisy::tt_launch_ellpack_matVecOp(
         device,
-        nrow,  // cell_count should be number of rows
-        ellpack_cols,   // ellpack_cols passed from caller
+        nrow,
+        ellpack_cols,
         d_ellpack_vals,
         d_ellpack_addrs,
         *d_inVec,
         *d_resVec,
-        kernel_dir,  // kernel directory
-        tt::daisy::EllpackHwImpl::FPU,  // hardware implementation type
+        kernel_dir,
+        tt::daisy::EllpackHwImpl::FPU,
         row_tile_min_max
     );
+    tt::tt_metal::Finish(device->command_queue(0)); 
 
+#ifdef ENABLE_DAISY_RTL
+    __daisy_instrumentation_exit(region_kernel);
+    __daisy_instrumentation_increment(region_kernel, "flop", ellpack_nnz * 2);
+    __daisy_instrumentation_increment(region_kernel, "dram_bytes", ellpack_nnz * (sizeof(float) + sizeof(uint32_t)) + ncol * sizeof(float) + nrow * sizeof(float));
+    __daisy_instrumentation_finalize(region_kernel);
+#endif
 }
 
 void _ZN2tt5daisy23tt_ellpack_matVec_out_9(
