@@ -57,9 +57,9 @@ void ddot (const int n, const float * const x, const float * const y,
 	  float * const result, double & time_allreduce)
 {  
   float local_result = 0.0;
-  if (y==x)
-    for (int i=0; i<n; i++) local_result += x[i]*x[i];
-  else
+  // if (y==x)
+  //   for (int i=0; i<n; i++) local_result += x[i]*x[i];
+  // else
     for (int i=0; i<n; i++) local_result += x[i]*y[i];
 
 #ifdef USING_MPI
