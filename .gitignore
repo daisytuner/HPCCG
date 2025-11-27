@@ -2,6 +2,7 @@
 
 build/
 cmake-*/
+.cpmcache/
 
 *.bc
 *.o
@@ -11,6 +12,9 @@ cmake-*/
 *.dot
 *.json
 *.txt
+*.elf
+
+
 
 *-local/
 
