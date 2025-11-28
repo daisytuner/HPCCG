@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: "*/30 * * * *" # every 30 minutes
+    - cron: "*/60 * * * *" # every 60 minutes
 
 parameters:
   container: daisytuner/x64-tenstorrent:0.63.0-latest
