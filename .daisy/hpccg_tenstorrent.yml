@@ -4,6 +4,8 @@ on:
       - master
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
+  schedule:
+    - cron: "0 2 * * *"
 
 parameters:
   container: daisytuner/x64-tenstorrent:0.63.0-latest
