@@ -19,10 +19,7 @@ steps:
     docc-cpp -O3 -g -mllvm -docc-tune=none main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.out
     
     # Auto-parallelized with OpenMP
-    docc-cpp -O3 -g -mllvm -docc-tune=openmp main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.openmp.out
-
-    # Auto-offloaded to CUDA
-    docc-cpp -O3 -g -mllvm -docc-tune=cuda main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -o hpccg.cuda.out
+    docc-cpp -O3 -g -mllvm -docc-tune=openmp -mllvm -docc-einsum main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -lblas -o hpccg.openmp.out
 
     # Auto-offloaded to Tenstorrent (temporarily: rtl)
 
@@ -45,7 +42,7 @@ steps:
 
     # Build HPCCG with Tenstorrent rtl
     cd ../../../
-    docc-cpp -O3 -g -mllvm -docc-tune=none -DUSING_TT_RTL main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -L./tenstorrent/rtl/build -ldaisy_tt_rt -o hpccg.tenstorrent.out
+    docc-cpp -O3 -g -mllvm -docc-tune=tenstorrent -mllvm -docc-einsum -DUSING_TT_RTL main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -L./tenstorrent/rtl/build -ldaisy_tt_rt -o hpccg.tenstorrent.out
 
   run:
     hpccg:
@@ -56,9 +53,6 @@ steps:
       energy: true
       env:
         OMP_NUM_THREADS: 8
-    # hpccg_cuda:
-    #   command: ./hpccg.cuda.out 50 50 50
-    #   energy: true
     hpccg_tenstorrent:
       command: ./hpccg.tenstorrent.out 50 50 50
       energy: true
