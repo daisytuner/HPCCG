@@ -25,7 +25,7 @@ steps:
 
     # Auto-offloaded to CUDA
     export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/cuda/lib64
-    docc-cpp -O3 -g -mllvm -docc-tune=cuda main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -lcublas -o hpccg.cuda.out
+    docc-cpp -O3 -g -mllvm -docc-tune=cuda -mllvm -docc-offloading-force-synchronous main.cpp generate_matrix.cpp HPCCG.cpp ddot.cpp HPC_sparsemv.cpp waxpby.cpp YAML_Doc.cpp YAML_Element.cpp mytimer.cpp -lm -lcublas -o hpccg.cuda.out
 
   run:
     hpccg:

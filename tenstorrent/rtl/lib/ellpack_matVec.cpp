@@ -516,6 +516,22 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_0_impl(
     float * y
 )
 {
+#ifdef ENABLE_DAISY_RTL
+    __daisy_metadata_t metadata_in = {
+        .file_name = "ellpack_matVec.cpp",
+        .function_name = "tt::daisy::ellpack_matVec",
+        .line_begin = 506,
+        .line_end = 579,
+        .column_begin = 0,
+        .column_end = 0,
+        .element_type = "h2d_transfer",
+        .target_type = "TENSTORRENT",
+        .region_uuid = "foam_ellpack_matVec_in0"
+    };
+    unsigned long long region = __daisy_instrumentation_init(&metadata_in, __DAISY_EVENT_SET_NONE);
+    __daisy_instrumentation_enter(region);
+#endif
+
   tt::tt_metal::IDevice* device = tt::daisy::get_device();
   
   std::vector<float> tilized_vals;
@@ -546,8 +562,18 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_0_impl(
     device->command_queue(0),
     d_ellpack_vals,
     tilized_vals.data(),
+#ifdef ENABLE_DAISY_RTL
     true
+#else 
+    false
+#endif
   );
+
+#ifdef ENABLE_DAISY_RTL
+    __daisy_instrumentation_exit(region);
+    __daisy_instrumentation_increment(region, "pcie_bytes", vals_buffer_size);
+    __daisy_instrumentation_finalize(region);
+#endif
 
   return d_ellpack_vals;
 }
@@ -592,6 +618,22 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_1_impl(
     float * y
 )
 {
+#ifdef ENABLE_DAISY_RTL
+    __daisy_metadata_t metadata_in = {
+        .file_name = "ellpack_matVec.cpp",
+        .function_name = "tt::daisy::ellpack_matVec",
+        .line_begin = 608,
+        .line_end = 681,
+        .column_begin = 0,
+        .column_end = 0,
+        .element_type = "h2d_transfer",
+        .target_type = "TENSTORRENT",
+        .region_uuid = "foam_ellpack_matVec_in1"
+    };
+    unsigned long long region = __daisy_instrumentation_init(&metadata_in, __DAISY_EVENT_SET_NONE);
+    __daisy_instrumentation_enter(region);
+#endif
+
   tt::tt_metal::IDevice* device = tt::daisy::get_device();
   
   std::vector<uint32_t> tilized_inds;
@@ -622,8 +664,18 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_1_impl(
     device->command_queue(0),
     d_ellpack_addrs,
     tilized_inds.data(),
+#ifdef ENABLE_DAISY_RTL
+    true
+#else 
     false
+#endif
   );
+
+#ifdef ENABLE_DAISY_RTL
+    __daisy_instrumentation_exit(region);
+    __daisy_instrumentation_increment(region, "pcie_bytes", addrs_buffer_size);
+    __daisy_instrumentation_finalize(region);
+#endif
 
   return d_ellpack_addrs;
 }
@@ -668,6 +720,22 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_8_impl(
     float * y
 )
 {
+#ifdef ENABLE_DAISY_RTL
+    __daisy_metadata_t metadata_in = {
+        .file_name = "ellpack_matVec.cpp",
+        .function_name = "tt::daisy::ellpack_matVec",
+        .line_begin = 710,
+        .line_end = 781,
+        .column_begin = 0,
+        .column_end = 0,
+        .element_type = "h2d_transfer",
+        .target_type = "TENSTORRENT",
+        .region_uuid = "foam_ellpack_matVec_in8"
+    };
+    unsigned long long region = __daisy_instrumentation_init(&metadata_in, __DAISY_EVENT_SET_NONE);
+    __daisy_instrumentation_enter(region);
+#endif
+
   tt::tt_metal::IDevice* device = tt::daisy::get_device();
   
   // Create buffers for input and output vectors
@@ -696,8 +764,18 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_8_impl(
     device->command_queue(0),
     d_inVec,
     x,
+#ifdef ENABLE_DAISY_RTL
+    true
+#else 
     false
+#endif
   );
+
+#ifdef ENABLE_DAISY_RTL
+    __daisy_instrumentation_exit(region);
+    __daisy_instrumentation_increment(region, "pcie_bytes", inVec_buffer_size);
+    __daisy_instrumentation_finalize(region);
+#endif
 
   return d_inVec;
 }
@@ -763,7 +841,7 @@ std::shared_ptr<tt::tt_metal::Buffer> _ZN2tt5daisy23tt_ellpack_matVec_in_9_impl(
       .page_size = resVec_buffer_size,
       .buffer_type = tt::tt_metal::BufferType::DRAM
     });
-  } 
+  }
 
   return d_resVec;
 }
@@ -815,16 +893,17 @@ void _ZN2tt5daisy23tt_ellpack_matVec_kernel(
 #ifdef ENABLE_DAISY_RTL
     __daisy_metadata_t metadata_kernel = {
         .file_name = "ellpack_matVec.cpp",
-        .function_name = "tt::daisy::ellpack_matVec_kernel",
-        .line_begin = 810,
-        .line_end = 883,
+        .function_name = "tt::daisy::ellpack_matVec",
+        .line_begin = 876,
+        .line_end = 958,
         .column_begin = 0,
         .column_end = 0,
+        .element_type = "map",
         .target_type = "TENSTORRENT",
         .region_uuid = "foam_ellpack_matVec_kernel"
     };
-    unsigned long long region_kernel = __daisy_instrumentation_init(&metadata_kernel, __DAISY_EVENT_SET_NONE);
-    __daisy_instrumentation_enter(region_kernel);
+    unsigned long long region = __daisy_instrumentation_init(&metadata_kernel, __DAISY_EVENT_SET_NONE);
+    __daisy_instrumentation_enter(region);
 #endif
 
     auto d_ellpack_vals = *static_cast<std::shared_ptr<tt::tt_metal::Buffer>*>(d_ellpack_vals_ptr);
@@ -868,13 +947,14 @@ void _ZN2tt5daisy23tt_ellpack_matVec_kernel(
         tt::daisy::EllpackHwImpl::FPU,
         row_tile_min_max
     );
-    tt::tt_metal::Finish(device->command_queue(0)); 
 
 #ifdef ENABLE_DAISY_RTL
-    __daisy_instrumentation_exit(region_kernel);
-    __daisy_instrumentation_increment(region_kernel, "flop", ellpack_nnz * 2);
-    __daisy_instrumentation_increment(region_kernel, "dram_bytes", ellpack_nnz * (sizeof(float) + sizeof(uint32_t)) + ncol * sizeof(float) + nrow * sizeof(float));
-    __daisy_instrumentation_finalize(region_kernel);
+    tt::tt_metal::Finish(device->command_queue(0)); 
+
+    __daisy_instrumentation_exit(region);
+    __daisy_instrumentation_increment(region, "flop", ellpack_nnz * 2);
+    __daisy_instrumentation_increment(region, "dram_bytes", ellpack_nnz * (sizeof(float) + sizeof(uint32_t)) + ncol * sizeof(float) + nrow * sizeof(float));
+    __daisy_instrumentation_finalize(region);
 #endif
 }
 
@@ -892,6 +972,22 @@ void _ZN2tt5daisy23tt_ellpack_matVec_out_9(
     void * d_resVec_ptr
 )
 {
+#ifdef ENABLE_DAISY_RTL
+    __daisy_metadata_t metadata_in = {
+        .file_name = "ellpack_matVec.cpp",
+        .function_name = "tt::daisy::ellpack_matVec",
+        .line_begin = 960,
+        .line_end = 1009,
+        .column_begin = 0,
+        .column_end = 0,
+        .element_type = "d2h_transfer",
+        .target_type = "TENSTORRENT",
+        .region_uuid = "foam_ellpack_matVec_out9"
+    };
+    unsigned long long region = __daisy_instrumentation_init(&metadata_in, __DAISY_EVENT_SET_NONE);
+    __daisy_instrumentation_enter(region);
+#endif
+
     auto d_resVec = *static_cast<std::shared_ptr<tt::tt_metal::Buffer>*>(d_resVec_ptr);
     tt::tt_metal::IDevice* device = tt::daisy::get_device();
 
@@ -903,6 +999,14 @@ void _ZN2tt5daisy23tt_ellpack_matVec_out_9(
     );
 
     tt::tt_metal::Finish(device->command_queue(0)); 
+
+#ifdef ENABLE_DAISY_RTL
+    size_t resVec_buffer_size = sizeof(float) * nrow;
+
+    __daisy_instrumentation_exit(region);
+    __daisy_instrumentation_increment(region, "pcie_bytes", resVec_buffer_size);
+    __daisy_instrumentation_finalize(region);
+#endif
 }
 
 extern "C" void _ZN2tt5daisy23tt_ellpack_matVec_out_0(
