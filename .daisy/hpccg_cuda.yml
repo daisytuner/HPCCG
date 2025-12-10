@@ -9,7 +9,7 @@ on:
 
 parameters:
   container: daisytuner/x64-tenstorrent:0.63.0-latest
-  timeout: 60
+  timeout: 120
   partitions:
     - zinnia
 
