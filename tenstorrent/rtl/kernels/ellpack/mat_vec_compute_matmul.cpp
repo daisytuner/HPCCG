@@ -21,15 +21,13 @@
 namespace NAMESPACE {
 
 void MAIN {
-    uint32_t vec_chunks = get_common_arg_val<uint32_t>(0);
-    uint32_t vec_chunk_batch_size = get_common_arg_val<uint32_t>(1);
-    bool stream_vec = get_common_arg_val<uint32_t>(2) != 0;
+    uint32_t max_tile_batch_size = get_common_arg_val<uint32_t>(0);
+    uint32_t vecs_per_chunk = get_common_arg_val<uint32_t>(1);
+    bool stream_vec = 1;
 
-    uint32_t batches = get_arg_val<uint32_t>(0);
-    uint32_t tiles_per_batch = get_arg_val<uint32_t>(1);
-    uint32_t num_tiles = get_arg_val<uint32_t>(2);
-    uint32_t start_chunk = get_arg_val<uint32_t>(3);
-    uint32_t num_chunks = get_arg_val<uint32_t>(4);
+    uint32_t num_tiles = get_arg_val<uint32_t>(0);
+    uint32_t first_vec = get_arg_val<uint32_t>(1); // actual offset to 1 vec
+    uint32_t last_vec = get_arg_val<uint32_t>(2);
 
 
     constexpr uint8_t cb_res = 0;
@@ -38,43 +36,34 @@ void MAIN {
     constexpr uint8_t cb_vec = 3;
     constexpr uint8_t cb_collect = 4;
 
-    constexpr uint32_t vec_page_size = 1024;
-    constexpr uint32_t vecs_per_page = vec_page_size / 4;
-    uint32_t vecs_per_chunk = vecs_per_page * vec_chunk_batch_size;
-    constexpr uint32_t vecs_per_mat_tile = 32;
-
     // binary_op_init_common(cb_dat, cb_dat, cb_collect);  // Unpack, Math, Pack
     // add_tiles_init(cb_dat, cb_dat);
 
     mm_init(cb_dat, cb_collect, cb_res, 1);
 
-    UNPACK(DPRINT << "ellpack matVec up: " << batches << " batch (" << tiles_per_batch << " tiles/batch), " << num_tiles << " tiles total, " << vec_chunks << "/" << vec_chunk_batch_size << " vec chunks" << ENDL());
+    UNPACK(DPRINT << "ellpack matVecMM up: " << num_tiles << " tiles (in batches of " << max_tile_batch_size << "), " << first_vec << " .. " << last_vec << " in chunks of " << vecs_per_chunk << ENDL());
 
-    uint32_t tile = 0;
-    for (uint32_t b = 0; b < batches; ++b) {
+    for (uint32_t first_tile_in_batch = 0; first_tile_in_batch < num_tiles; first_tile_in_batch += max_tile_batch_size) {
         DeviceZoneScopedN("Batch");
-        uint32_t end_tile_in_batch = std::min(num_tiles, tile + tiles_per_batch);
+        uint32_t end_tile_in_batch = std::min(num_tiles, first_tile_in_batch + max_tile_batch_size);
 
         tile_regs_acquire();
 
         {
             UNPACK(DeviceZoneScopedN("WaitForCbTiles"));
-            cb_wait_front(cb_dat, tiles_per_batch);
-            cb_wait_front(cb_addr, tiles_per_batch);
-            cb_wait_front(cb_collect, tiles_per_batch);
+            cb_wait_front(cb_dat, max_tile_batch_size);
+            cb_wait_front(cb_addr, max_tile_batch_size);
+            cb_wait_front(cb_collect, max_tile_batch_size);
         }
 
+        // will fill cb_collect in memory, before the unpackers ever touch it for matmul
         unpacker_collect(
             cb_addr,
             cb_collect,
             cb_vec,
-            num_chunks,
             vecs_per_chunk,
-            tile, end_tile_in_batch,
-            vec_chunk_batch_size,
-            stream_vec || (b == 0),
-            stream_vec || (b == (batches - 1)),
-            start_chunk
+            first_vec, last_vec,
+            first_tile_in_batch, end_tile_in_batch
         );
 
         UNPACK(DPRINT << "Unpack done" << ENDL());
@@ -107,7 +96,7 @@ void MAIN {
         //     UNPACK(DPRINT << "---" << ENDL());
         // }
 
-        auto tiles = end_tile_in_batch - tile;
+        auto tiles = end_tile_in_batch - first_tile_in_batch;
         MATH(DPRINT << "Matmul " << tiles << " tiles" << ENDL());
 
         {
@@ -125,9 +114,9 @@ void MAIN {
 
         tile_regs_wait();
 
-        cb_pop_front(cb_collect, tiles_per_batch);
-        cb_pop_front(cb_dat, tiles_per_batch);
-        cb_pop_front(cb_addr, tiles_per_batch);
+        cb_pop_front(cb_collect, max_tile_batch_size);
+        cb_pop_front(cb_dat, max_tile_batch_size);
+        cb_pop_front(cb_addr, max_tile_batch_size);
 
         PACK(DPRINT << "Pushing result" << ENDL());
         {
