@@ -12,6 +12,7 @@ parameters:
   timeout: 90
   partitions:
     - zinnia-ci
+  docc_version: 0.2.14
 
 steps:
   build: |
