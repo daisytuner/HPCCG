@@ -8,7 +8,7 @@ on:
     - cron: "0 0 * * 4"
 
 parameters:
-  container: daisytuner/docc-build-env-llvm19:latest-amd64
+  container: daisytuner/docc-build-env-llvm21-ubuntu-24.04:latest-amd64
   timeout: 90
   partitions:
     - zinnia
