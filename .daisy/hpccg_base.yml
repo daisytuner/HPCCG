@@ -9,6 +9,7 @@ on:
 
 parameters:
   container: daisytuner/docc-build-env-llvm19:latest-amd64
+  docc_version: "0.2.14"
   timeout: 90
   partitions:
     - zinnia
