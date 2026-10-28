@@ -33,6 +33,8 @@ steps:
     # mv libdaisy_tt_rt.so ../../../libdaisy_tt_rt.so
     # rm -rf *
 
+    export DOCC_ROOT=/usr/lib/docc-$DOCC_VERSION
+
     export CPATH=$DOCC_ROOT/include:$CPATH
     export LIBRARY_PATH=$DOCC_ROOT/lib:$LIBRARY_PATH
 
