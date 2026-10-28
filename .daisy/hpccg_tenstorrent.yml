@@ -9,9 +9,14 @@ on:
 
 parameters:
   container: daisytuner/x64-tenstorrent:0.63.0-latest
+  dist_platform:
+    architecture: x64
+    os: linux
+    os_release:
+      id: ubuntu
+      version_id: "24.04"
   timeout: 90
-  partitions:
-    - zinnia-ci
+  accelerator: tenstorrent_blackhole
   docc_version: 0.2.14
 
 steps:
@@ -27,6 +32,8 @@ steps:
     # make -j$(nproc)
     # mv libdaisy_tt_rt.so ../../../libdaisy_tt_rt.so
     # rm -rf *
+
+    export DOCC_ROOT=/usr/lib/docc-$DOCC_VERSION
 
     export CPATH=$DOCC_ROOT/include:$CPATH
     export LIBRARY_PATH=$DOCC_ROOT/lib:$LIBRARY_PATH
